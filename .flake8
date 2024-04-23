@@ -1,0 +1,9 @@
+[flake8]
+max-line-length = 88
+exclude =
+    ./.git,
+    .venv,
+    *.pyi
+    .pre-commit-config.yaml
+    *.md
+    .flake8
