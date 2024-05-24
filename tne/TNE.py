@@ -1,9 +1,10 @@
-import io
-
+import json
+import yaml
 import boto3
 import pandas as pd
+from PIL import Image
 from io import BytesIO
-from typing import List, Union
+from typing import Dict, List, Union
 
 # S3 literals
 BUCKET_NAME = "bp-authoring-files"
@@ -30,17 +31,39 @@ class TNE:
 
         return data_contents
 
-    def get_object(self, key: str) -> Union[str, pd.DataFrame]:
+    def get_object(self, key: str) -> Union[str, pd.DataFrame, Image, Dict]:
+        try:
+            file_content = self.get_object_bytes(key)
+            if file_content:
+                match key.split(".")[-1]:
+                    case "txt" | "md" | "out":
+                        return file_content.decode("utf-8")
+                    case "csv":
+                        return pd.read_csv(BytesIO(file_content), encoding="utf-8")
+                    case "jpg" | "jpeg" | "png":
+                        return Image.open(BytesIO(file_content))
+                    case "json":
+                        return json.loads(file_content.decode("utf-8"))
+                    case "yaml" | "yml":
+                        return yaml.safe_load(file_content.decode("utf-8"))
+                    case _:
+                        raise ValueError(
+                            f"Unsupported file extension: {key.split('.')[-1]}. Use method get_object_bytes() to access this object."
+                        )
+
+        except IOError as io:
+            raise io
+        except ValueError as ve:
+            raise ve
+        except Exception as e:
+            raise e
+
+    def get_object_bytes(self, key: str) -> bytes:
         try:
             modified_key = f"{self.base_prefix}/{key}"
             file_content = self.client.get_object(Bucket=BUCKET_NAME, Key=modified_key)[
                 "Body"
             ].read()
-            if file_content:
-                match key.split(".")[-1]:
-                    case "txt":
-                        return file_content.decode("utf-8")
-                    case "csv":
-                        return pd.read_csv(BytesIO(file_content), encoding="utf-8")
-        except Exception:
-            raise KeyError(f"No matching object key.")
+            return file_content
+        except Exception as e:
+            raise IOError(f"Error pulling object from S3: {e}")
