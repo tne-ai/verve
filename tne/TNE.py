@@ -7,20 +7,19 @@ from io import BytesIO
 from typing import Dict, List, Union
 
 # S3 literals
-BUCKET_NAME = "bp-authoring-files"
 DATA_DIR = "data"
 
-
 class TNE:
-    def __init__(self, uid: str):
+    def __init__(self, uid: str, bucket_name: str):
         self.uid = uid
+        self.bucket_name = bucket_name
         self.client = boto3.client("s3")
         self.base_prefix = f"d/{self.uid}/{DATA_DIR}"
         self.data_list = self.list_data()
 
     def list_data(self) -> List[str]:
         response = self.client.list_objects_v2(
-            Bucket=BUCKET_NAME, Prefix=self.base_prefix
+            Bucket=self.bucket_name, Prefix=self.base_prefix
         )
         data_contents = []
         if "Contents" in response:
@@ -61,7 +60,7 @@ class TNE:
     def get_object_bytes(self, key: str) -> bytes:
         try:
             modified_key = f"{self.base_prefix}/{key}"
-            file_content = self.client.get_object(Bucket=BUCKET_NAME, Key=modified_key)[
+            file_content = self.client.get_object(Bucket=self.bucket_name, Key=modified_key)[
                 "Body"
             ].read()
             return file_content
