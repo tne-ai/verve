@@ -39,6 +39,8 @@ class TNE:
                         return file_content.decode("utf-8")
                     case "csv":
                         return pd.read_csv(BytesIO(file_content), encoding="utf-8")
+                    case "xlsx":
+                        return pd.read_excel(BytesIO(file_content), sheet_name=0)
                     case "jpg" | "jpeg" | "png":
                         return Image.open(BytesIO(file_content))
                     case "json":
