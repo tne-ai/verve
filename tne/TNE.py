@@ -40,7 +40,7 @@ class TNE:
                     case "csv":
                         return pd.read_csv(BytesIO(file_content), encoding="utf-8")
                     case "xlsx":
-                        return pd.read_excel(BytesIO(file_content), sheet_name=0)
+                        return pd.read_excel(BytesIO(file_content), sheet_name=None, engine='openpyxl')
                     case "jpg" | "jpeg" | "png":
                         return Image.open(BytesIO(file_content))
                     case "json":
