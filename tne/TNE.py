@@ -7,7 +7,7 @@ from io import BytesIO
 from typing import Dict, List, Union
 
 # S3 literals
-DATA_DIR = "Files"
+DATA_DIR = "data"
 
 class TNE:
     def __init__(self, uid: str, bucket_name: str):
