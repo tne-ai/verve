@@ -14,8 +14,8 @@ LATEST = "LATEST"
 class TNE:
     def __init__(
         self,
-        uid: str,
-        bucket_name: str,
+        uid: str = "",
+        bucket_name: str = "bp-authoring-files",
         project: Optional[str] = None,
         version: Optional[str] = LATEST,
     ):
