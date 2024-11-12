@@ -81,3 +81,58 @@ class TNE:
             return file_content
         except Exception as e:
             raise IOError(f"Error pulling object from S3: {e}")
+
+    def upload_object(self, key: str, data: Union[str, pd.DataFrame, Image, Dict]):
+        try:
+            modified_key = f"{self.base_prefix}/{key}"
+
+            # Handling different data types
+            match key.split(".")[-1]:
+                case "txt" | "md" | "out":
+                    file_content = data.encode("utf-8") if isinstance(data, str) else str(data).encode("utf-8")
+                case "csv":
+                    if isinstance(data, pd.DataFrame):
+                        csv_buffer = BytesIO()
+                        data.to_csv(csv_buffer, index=False)
+                        file_content = csv_buffer.getvalue()
+                    else:
+                        raise ValueError(f"Expected a DataFrame for CSV upload, got {type(data)}.")
+                case "xlsx":
+                    if isinstance(data, pd.DataFrame) or isinstance(data, dict):
+                        excel_buffer = BytesIO()
+                        with pd.ExcelWriter(excel_buffer, engine="openpyxl") as writer:
+                            if isinstance(data, pd.DataFrame):
+                                data.to_excel(writer, index=False, sheet_name="Sheet1")
+                            else:
+                                for sheet_name, df in data.items():
+                                    if isinstance(df, pd.DataFrame):
+                                        df.to_excel(writer, index=False, sheet_name=sheet_name)
+                        file_content = excel_buffer.getvalue()
+                    else:
+                        raise ValueError(f"Expected a DataFrame or a dictionary of DataFrames for XLSX upload, got {type(data)}.")
+                case "jpg" | "jpeg" | "png":
+                    if isinstance(data, Image.Image):
+                        img_buffer = BytesIO()
+                        data.save(img_buffer, format=data.format if data.format else "PNG")
+                        file_content = img_buffer.getvalue()
+                    else:
+                        raise ValueError(f"Expected a PIL Image for image upload, got {type(data)}.")
+                case "json":
+                    file_content = json.dumps(data).encode("utf-8") if isinstance(data, (dict, list)) else str(data).encode("utf-8")
+                case "yaml" | "yml":
+                    file_content = yaml.safe_dump(data).encode("utf-8") if isinstance(data, (dict, list)) else str(data).encode("utf-8")
+                case _:
+                    raise ValueError(f"Unsupported file extension: {key.split('.')[-1]}. Cannot determine how to upload this object.")
+
+            # Upload the object to S3
+            self.client.put_object(
+                Bucket=self.bucket_name,
+                Key=modified_key,
+                Body=file_content
+            )
+
+        except ValueError as ve:
+            raise ve
+        except Exception as e:
+            raise IOError(f"Error uploading object to S3: {e}")
+
