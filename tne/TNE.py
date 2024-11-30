@@ -4,6 +4,8 @@ import boto3
 import pandas as pd
 from PIL import Image
 from io import BytesIO
+from docx import Document
+from pptx import Presentation
 from typing import Dict, List, Optional, Union
 
 # S3 literals
@@ -121,6 +123,21 @@ class TNE:
                     file_content = json.dumps(data).encode("utf-8") if isinstance(data, (dict, list)) else str(data).encode("utf-8")
                 case "yaml" | "yml":
                     file_content = yaml.safe_dump(data).encode("utf-8") if isinstance(data, (dict, list)) else str(data).encode("utf-8")
+                case "docx":
+                    if isinstance(data, Document):
+                        docx_buffer = BytesIO()
+                        data.save(docx_buffer)
+                        file_content = docx_buffer.getvalue()
+                    else:
+                        raise ValueError(f"Expected a python-docx Document for DOCX upload, got {type(data)}.")
+                case "pptx":
+                    if isinstance(data, Presentation):
+                        pptx_buffer = BytesIO()
+                        data.save(pptx_buffer)
+                        file_content = pptx_buffer.getvalue()
+                    else:
+                        raise ValueError(f"Expected a python-pptx Presentation for PPTX upload, got {type(data)}.")
+
                 case _:
                     raise ValueError(f"Unsupported file extension: {key.split('.')[-1]}. Cannot determine how to upload this object.")
 
