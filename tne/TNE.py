@@ -43,7 +43,7 @@ class TNE:
 
         return data_contents
 
-    def get_object(self, key: str) -> Union[str, pd.DataFrame, Image, Dict]:
+    def get_object(self, key: str) -> Union[str, pd.DataFrame, Image.Image, Dict, Document, Presentation]:
         try:
             file_content = self.get_object_bytes(key)
             if file_content:
@@ -62,6 +62,12 @@ class TNE:
                         return json.loads(file_content.decode("utf-8"))
                     case "yaml" | "yml":
                         return yaml.safe_load(file_content.decode("utf-8"))
+                    case "docx":
+                        docx_buffer = BytesIO(file_content)
+                        return Document(docx_buffer)
+                    case "pptx":
+                        pptx_buffer = BytesIO(file_content)
+                        return Presentation(pptx_buffer)
                     case _:
                         raise ValueError(
                             f"Unsupported file extension: {key.split('.')[-1]}. Use method get_object_bytes() to access this object."
@@ -73,6 +79,7 @@ class TNE:
             raise ve
         except Exception as e:
             raise e
+
 
     def get_object_bytes(self, key: str) -> bytes:
         try:
