@@ -8,6 +8,8 @@ from docx import Document
 from pptx import Presentation
 from typing import Dict, List, Optional, Union
 
+from reportlab.platypus import SimpleDocTemplate
+
 # S3 literals
 DATA_DIR = "Data"
 LATEST = "LATEST"
@@ -144,6 +146,8 @@ class TNE:
                         file_content = pptx_buffer.getvalue()
                     except AttributeError:
                         raise ValueError(f"Expected a python-pptx Presentation for PPTX upload, got {type(data)}.")
+                case "pdf":
+                    file_content = data.getvalue()
                 case _:
                     raise ValueError(f"Unsupported file extension: {key.split('.')[-1]}. Cannot determine how to upload this object.")
 
