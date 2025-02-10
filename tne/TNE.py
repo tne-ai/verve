@@ -6,6 +6,7 @@ from PIL import Image
 from io import BytesIO
 from docx import Document
 from pptx import Presentation
+from sqlalchemy import create_engine
 from typing import Dict, List, Optional, Union
 
 from reportlab.platypus import SimpleDocTemplate
@@ -18,19 +19,30 @@ LATEST = "LATEST"
 class TNE:
     def __init__(
         self,
-        uid: str = "",
-        bucket_name: str = "bp-authoring-files",
+        uid: Optional[str] = None,
+        bucket_name: Optional[str] = None,
         project: Optional[str] = None,
         version: Optional[str] = LATEST,
+        db_name: Optional[str] = None,
+        db_host: Optional[str] = None,
+        db_pass: Optional[str] = None,
     ):
-        self.uid = uid
-        self.bucket_name = bucket_name
-        self.client = boto3.client("s3")
-        if project:
-            self.base_prefix = f"projects/{project}--{version}/{DATA_DIR}"
-        else:
-            self.base_prefix = f"d/{self.uid}/{DATA_DIR}"
-        self.data_list = self.list_data()
+        # S3 attributes
+        if bucket_name:
+            self.uid = uid
+            self.bucket_name = bucket_name
+            self.client = boto3.client("s3")
+            if project:
+                self.base_prefix = f"projects/{project}--{version}/{DATA_DIR}"
+            else:
+                self.base_prefix = f"d/{self.uid}/{DATA_DIR}"
+            self.data_list = self.list_data()
+
+        if db_name:
+            postgresql_url = f"postgresql+psycopg2://postgres:{db_pass}@{db_host}:5432/{db_name}"
+            self.engine = create_engine(postgresql_url)
+
+
 
     def list_data(self) -> List[str]:
         response = self.client.list_objects_v2(
@@ -44,6 +56,10 @@ class TNE:
                     data_contents.append(filename)
 
         return data_contents
+
+    def get_table(self, table_name: str) -> pd.DataFrame:
+        return pd.read_sql_table(table_name, con=self.engine)
+
 
     def get_object(self, key: str) -> Union[str, pd.DataFrame, Image.Image, Dict, Document, Presentation]:
         try:
