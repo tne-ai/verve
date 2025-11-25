@@ -19,6 +19,7 @@ python-docx = "^0.8.11"
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^3.7.0"
+virtualenv = "^20.26.6"
 
 [build-system]
 requires = ["poetry-core"]
